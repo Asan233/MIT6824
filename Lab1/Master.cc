@@ -26,8 +26,10 @@ std::unordered_map<int, std::string> results;   // workerID -> outputFiles
 std::queue<std::string> MapTasks;               // MapFiles
 std::queue<std::string> ReducesTasks;           // ReduceFiles
 
-std::atomic<int> MapTaskNumer(0);             // Map任务数量
-std::atomic<int> ReduceTaskNumer(0);          // Reduce任务数量
+std::atomic<int> MapTaskNumer(0);              // Map任务数量
+std::atomic<int> MapFinish(0);                 // Map任务完成数量
+std::atomic<int> ReduceTaskNumer(0);           // Reduce任务数量
+std::atomic<int> ReduceFinish(0);              // Reduce任务完成数量
 
 std::mutex mapMutex;                            // Map队列互斥锁
 std::condition_variable MapCV;                  // Map队列条件变量
@@ -117,16 +119,13 @@ class Time_Wheel {
 
     private:
         Time_Wheel(): time_wheel(N, nullptr), head(N, nullptr), tail(N, nullptr), cur(0) {
-            //std::cout << "Time Wheel Init " << std::endl;
             for(int i = 0; i < N; ++i) {
-                //std::cout << i << std::endl;
                 head[i] = new time_tw;
                 tail[i] = new time_tw;
                 time_wheel[i] = head[i];
                 head[i]->next = tail[i];
                 tail[i]->prev = head[i];
             }
-            //std::cout << "Time Wheel Inited " << std::endl;
         }
 
         std::vector<time_tw*> time_wheel;
@@ -161,11 +160,27 @@ class MapReduceServiceImpl final : public MapReduce::Service {
         return grpc::Status::OK;
     }
 
+    grpc::Status MapDone(grpc::ServerContext* context, const mapreduce::MapRequest* request, google::protobuf::Empty* response) override{
+        int work_id = request->map_id();
+        std::cout << "Map Done : " << work_id << "  Task : " << workers[work_id] << std::endl;
+        Time_Wheel::GetInstance()->del_time(work_id);
+        // Map需要完成任务减一
+        MapFinish.fetch_sub(1, std::memory_order_release);
+        // Reduce需要完成的任务加一
+        ReduceFinish.fetch_add(1, std::memory_order_release);
+        ReduceTaskNumer.fetch_add(1, std::memory_order_release);
+        std::unique_lock<std::mutex> lock(reduceMutex);
+        ReducesTasks.push(workers[work_id]);
+        lock.unlock();
+        MapCV.notify_one();
+        return grpc::Status::OK;
+    }
+
     grpc::Status Reduce(grpc::ServerContext* context, const mapreduce::ReduceRequest* request, mapreduce::ReduceResponse* response) override {
         std::cout << "Reduce Request from Worker : " << request->reduce_id() << std::endl;
         std::unique_lock<std::mutex> lock(reduceMutex);
         // Reduce请求任务
-        if(!ReducesTasks.empty() ) {
+        if( !ReducesTasks.empty() ) {
             // 设置返回消息体
             response->set_is_finished(false);
             response->set_filename(ReducesTasks.front());
@@ -177,14 +192,29 @@ class MapReduceServiceImpl final : public MapReduce::Service {
         return grpc::Status::OK;
     }
 
+    grpc::Status ReduceDone(grpc::ServerContext* context, const mapreduce::ReduceRequest* request, google::protobuf::Empty* response) override{
+        int work_id = request->reduce_id();
+        Time_Wheel::GetInstance()->del_time(work_id);
+        // Reduce需要完成任务减一
+        ReduceFinish.fetch_sub(1, std::memory_order_release);
+        return grpc::Status::OK;
+    }
+
     grpc::Status SubscribeReduceTask(grpc::ServerContext* context, const ::google::protobuf::Empty* request, grpc::ServerWriter<mapreduce::TaskNotification>* write) override {
         mapreduce::TaskNotification notification;
         std::cout << "Reduce Client Subscribe " << std::endl;
         while(!context->IsCancelled()) {
             std::unique_lock<std::mutex> lock(reduceMutex);
-            reduceCV.wait(lock, []{ return ReduceTaskNumer.load(std::memory_order_acquire) != 0; } );
-            notification.set_task_type(mapreduce::TaskNotification::REDUCE);
-            write->Write(notification);
+            reduceCV.wait(lock, []{ return ReduceTaskNumer.load(std::memory_order_acquire) != 0 || ReduceFinish.load(std::memory_order_acquire) == 0; } );
+            if(ReduceFinish.load(std::memory_order_acquire) == 0) {
+                notification.set_task_type(mapreduce::TaskNotification::NONE);
+                write->Write(notification);
+                break;
+            }else {
+                ReduceTaskNumer.fetch_sub(1, std::memory_order_release);
+                notification.set_task_type(mapreduce::TaskNotification::REDUCE);
+                write->Write(notification);
+            }
         }
         return grpc::Status::OK;
     }
@@ -195,10 +225,16 @@ class MapReduceServiceImpl final : public MapReduce::Service {
         std::cout << "Map Client Subscribe " << std::endl;
         while(!context->IsCancelled()) {
             std::unique_lock<std::mutex> lock(tmpMutex);
-            MapCV.wait(lock, []{ return MapTaskNumer.load(std::memory_order_acquire) != 0; } );
-            MapTaskNumer.fetch_sub(1, std::memory_order_release);
-            notification.set_task_type(mapreduce::TaskNotification::MAP);
-            write->Write(notification);
+            MapCV.wait(lock, []{ return MapTaskNumer.load(std::memory_order_acquire) != 0 || MapFinish.load(std::memory_order_acquire) == 0; } );
+            if(MapFinish.load(std::memory_order_acquire) == 0) {
+                notification.set_task_type(mapreduce::TaskNotification::NONE);
+                write->Write(notification);
+                break;
+            }else {
+                MapTaskNumer.fetch_sub(1, std::memory_order_release);
+                notification.set_task_type(mapreduce::TaskNotification::MAP);
+                write->Write(notification);
+            }
         }
         return grpc::Status::OK;
     }
@@ -237,6 +273,7 @@ void ReadFiles(std::queue<std::string>& inputFiles, std::string& inputDir)
         {
             inputFiles.push(inputDir + "/" + ptr->d_name);
             MapTaskNumer.fetch_add(1, std::memory_order_release);
+            MapFinish.fetch_add(1, std::memory_order_release);
         }
     }
     closedir(pDir);

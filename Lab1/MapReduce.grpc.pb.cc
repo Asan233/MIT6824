@@ -26,6 +26,8 @@ static const char* MapReduce_method_names[] = {
   "/mapreduce.MapReduce/Reduce",
   "/mapreduce.MapReduce/SubscribeReduceTask",
   "/mapreduce.MapReduce/SubscribeMapTask",
+  "/mapreduce.MapReduce/MapDone",
+  "/mapreduce.MapReduce/ReduceDone",
 };
 
 std::unique_ptr< MapReduce::Stub> MapReduce::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -39,6 +41,8 @@ MapReduce::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel,
   , rpcmethod_Reduce_(MapReduce_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_SubscribeReduceTask_(MapReduce_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_SubscribeMapTask_(MapReduce_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_MapDone_(MapReduce_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ReduceDone_(MapReduce_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status MapReduce::Stub::Map(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::mapreduce::MapResponse* response) {
@@ -119,6 +123,52 @@ void MapReduce::Stub::async::SubscribeMapTask(::grpc::ClientContext* context, co
   return ::grpc::internal::ClientAsyncReaderFactory< ::mapreduce::TaskNotification>::Create(channel_.get(), cq, rpcmethod_SubscribeMapTask_, context, request, false, nullptr);
 }
 
+::grpc::Status MapReduce::Stub::MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::google::protobuf::Empty* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::mapreduce::MapRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MapDone_, context, request, response);
+}
+
+void MapReduce::Stub::async::MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mapreduce::MapRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MapDone_, context, request, response, std::move(f));
+}
+
+void MapReduce::Stub::async::MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MapDone_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* MapReduce::Stub::PrepareAsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::google::protobuf::Empty, ::mapreduce::MapRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_MapDone_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* MapReduce::Stub::AsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncMapDoneRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status MapReduce::Stub::ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::google::protobuf::Empty* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::mapreduce::ReduceRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ReduceDone_, context, request, response);
+}
+
+void MapReduce::Stub::async::ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mapreduce::ReduceRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ReduceDone_, context, request, response, std::move(f));
+}
+
+void MapReduce::Stub::async::ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ReduceDone_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* MapReduce::Stub::PrepareAsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::google::protobuf::Empty, ::mapreduce::ReduceRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ReduceDone_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* MapReduce::Stub::AsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncReduceDoneRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 MapReduce::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MapReduce_method_names[0],
@@ -160,6 +210,26 @@ MapReduce::Service::Service() {
              ::grpc::ServerWriter<::mapreduce::TaskNotification>* writer) {
                return service->SubscribeMapTask(ctx, req, writer);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      MapReduce_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< MapReduce::Service, ::mapreduce::MapRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MapReduce::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mapreduce::MapRequest* req,
+             ::google::protobuf::Empty* resp) {
+               return service->MapDone(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      MapReduce_method_names[5],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< MapReduce::Service, ::mapreduce::ReduceRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MapReduce::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mapreduce::ReduceRequest* req,
+             ::google::protobuf::Empty* resp) {
+               return service->ReduceDone(ctx, req, resp);
+             }, this)));
 }
 
 MapReduce::Service::~Service() {
@@ -190,6 +260,20 @@ MapReduce::Service::~Service() {
   (void) context;
   (void) request;
   (void) writer;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status MapReduce::Service::MapDone(::grpc::ServerContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status MapReduce::Service::ReduceDone(::grpc::ServerContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response) {
+  (void) context;
+  (void) request;
+  (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 

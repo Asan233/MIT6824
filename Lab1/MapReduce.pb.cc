@@ -288,15 +288,18 @@ const char descriptor_table_protodef_MapReduce_2eproto[] ABSL_ATTRIBUTE_SECTION_
     "d\030\001 \001(\005\"4\n\013MapResponse\022\023\n\013is_finished\030\001 "
     "\001(\010\022\020\n\010filename\030\002 \001(\t\"\"\n\rReduceRequest\022\021"
     "\n\treduce_id\030\001 \001(\005\"7\n\016ReduceResponse\022\023\n\013i"
-    "s_finished\030\001 \001(\010\022\020\n\010filename\030\002 \001(\t2\231\002\n\tM"
+    "s_finished\030\001 \001(\010\022\020\n\010filename\030\002 \001(\t2\223\003\n\tM"
     "apReduce\0224\n\003Map\022\025.mapreduce.MapRequest\032\026"
     ".mapreduce.MapResponse\022=\n\006Reduce\022\030.mapre"
     "duce.ReduceRequest\032\031.mapreduce.ReduceRes"
     "ponse\022L\n\023SubscribeReduceTask\022\026.google.pr"
     "otobuf.Empty\032\033.mapreduce.TaskNotificatio"
     "n0\001\022I\n\020SubscribeMapTask\022\026.google.protobu"
-    "f.Empty\032\033.mapreduce.TaskNotification0\001b\006"
-    "proto3"
+    "f.Empty\032\033.mapreduce.TaskNotification0\001\0228"
+    "\n\007MapDone\022\025.mapreduce.MapRequest\032\026.googl"
+    "e.protobuf.Empty\022>\n\nReduceDone\022\030.mapredu"
+    "ce.ReduceRequest\032\026.google.protobuf.Empty"
+    "b\006proto3"
 };
 static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
     descriptor_table_MapReduce_2eproto_deps[1] = {
@@ -306,7 +309,7 @@ static ::absl::once_flag descriptor_table_MapReduce_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_MapReduce_2eproto = {
     false,
     false,
-    686,
+    808,
     descriptor_table_protodef_MapReduce_2eproto,
     "MapReduce.proto",
     &descriptor_table_MapReduce_2eproto_once,

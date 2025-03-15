@@ -19,6 +19,10 @@ service MapReduce {
     rpc SubscribeReduceTask(google.protobuf.Empty) returns (stream TaskNotification);
     // 建立长连接， Master推送Reduce任务更新
     rpc SubscribeMapTask(google.protobuf.Empty) returns (stream TaskNotification);
+    // MapReduce任务完成
+    rpc MapDone(MapRequest) returns (google.protobuf.Empty);
+    // Reduce任务完成
+    rpc ReduceDone(ReduceRequest) returns (google.protobuf.Empty);
 }
 
 message TaskNotification {

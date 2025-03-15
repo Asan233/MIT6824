@@ -77,6 +77,22 @@ class MapReduce final {
     std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::mapreduce::TaskNotification>> PrepareAsyncSubscribeMapTask(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::mapreduce::TaskNotification>>(PrepareAsyncSubscribeMapTaskRaw(context, request, cq));
     }
+    // MapReduce任务完成
+    virtual ::grpc::Status MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::google::protobuf::Empty* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> AsyncMapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(AsyncMapDoneRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> PrepareAsyncMapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(PrepareAsyncMapDoneRaw(context, request, cq));
+    }
+    // Reduce任务完成
+    virtual ::grpc::Status ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::google::protobuf::Empty* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> AsyncReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(AsyncReduceDoneRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> PrepareAsyncReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(PrepareAsyncReduceDoneRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
@@ -90,6 +106,12 @@ class MapReduce final {
       virtual void SubscribeReduceTask(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::mapreduce::TaskNotification>* reactor) = 0;
       // 建立长连接， Master推送Reduce任务更新
       virtual void SubscribeMapTask(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::mapreduce::TaskNotification>* reactor) = 0;
+      // MapReduce任务完成
+      virtual void MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Reduce任务完成
+      virtual void ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -105,6 +127,10 @@ class MapReduce final {
     virtual ::grpc::ClientReaderInterface< ::mapreduce::TaskNotification>* SubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::mapreduce::TaskNotification>* AsyncSubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::mapreduce::TaskNotification>* PrepareAsyncSubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* AsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* AsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -141,6 +167,20 @@ class MapReduce final {
     std::unique_ptr< ::grpc::ClientAsyncReader< ::mapreduce::TaskNotification>> PrepareAsyncSubscribeMapTask(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReader< ::mapreduce::TaskNotification>>(PrepareAsyncSubscribeMapTaskRaw(context, request, cq));
     }
+    ::grpc::Status MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::google::protobuf::Empty* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> AsyncMapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(AsyncMapDoneRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> PrepareAsyncMapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(PrepareAsyncMapDoneRaw(context, request, cq));
+    }
+    ::grpc::Status ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::google::protobuf::Empty* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> AsyncReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(AsyncReduceDoneRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> PrepareAsyncReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(PrepareAsyncReduceDoneRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
@@ -150,6 +190,10 @@ class MapReduce final {
       void Reduce(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::mapreduce::ReduceResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void SubscribeReduceTask(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::mapreduce::TaskNotification>* reactor) override;
       void SubscribeMapTask(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::mapreduce::TaskNotification>* reactor) override;
+      void MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
+      void MapDone(::grpc::ClientContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
+      void ReduceDone(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -171,10 +215,16 @@ class MapReduce final {
     ::grpc::ClientReader< ::mapreduce::TaskNotification>* SubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) override;
     ::grpc::ClientAsyncReader< ::mapreduce::TaskNotification>* AsyncSubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) override;
     ::grpc::ClientAsyncReader< ::mapreduce::TaskNotification>* PrepareAsyncSubscribeMapTaskRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* AsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncMapDoneRaw(::grpc::ClientContext* context, const ::mapreduce::MapRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* AsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncReduceDoneRaw(::grpc::ClientContext* context, const ::mapreduce::ReduceRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_Map_;
     const ::grpc::internal::RpcMethod rpcmethod_Reduce_;
     const ::grpc::internal::RpcMethod rpcmethod_SubscribeReduceTask_;
     const ::grpc::internal::RpcMethod rpcmethod_SubscribeMapTask_;
+    const ::grpc::internal::RpcMethod rpcmethod_MapDone_;
+    const ::grpc::internal::RpcMethod rpcmethod_ReduceDone_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -190,6 +240,10 @@ class MapReduce final {
     virtual ::grpc::Status SubscribeReduceTask(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::mapreduce::TaskNotification>* writer);
     // 建立长连接， Master推送Reduce任务更新
     virtual ::grpc::Status SubscribeMapTask(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::mapreduce::TaskNotification>* writer);
+    // MapReduce任务完成
+    virtual ::grpc::Status MapDone(::grpc::ServerContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response);
+    // Reduce任务完成
+    virtual ::grpc::Status ReduceDone(::grpc::ServerContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_Map : public BaseClass {
@@ -271,7 +325,47 @@ class MapReduce final {
       ::grpc::Service::RequestAsyncServerStreaming(3, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Map<WithAsyncMethod_Reduce<WithAsyncMethod_SubscribeReduceTask<WithAsyncMethod_SubscribeMapTask<Service > > > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_MapDone() {
+      ::grpc::Service::MarkMethodAsync(4);
+    }
+    ~WithAsyncMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestMapDone(::grpc::ServerContext* context, ::mapreduce::MapRequest* request, ::grpc::ServerAsyncResponseWriter< ::google::protobuf::Empty>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodAsync(5);
+    }
+    ~WithAsyncMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestReduceDone(::grpc::ServerContext* context, ::mapreduce::ReduceRequest* request, ::grpc::ServerAsyncResponseWriter< ::google::protobuf::Empty>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Map<WithAsyncMethod_Reduce<WithAsyncMethod_SubscribeReduceTask<WithAsyncMethod_SubscribeMapTask<WithAsyncMethod_MapDone<WithAsyncMethod_ReduceDone<Service > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Map : public BaseClass {
    private:
@@ -370,7 +464,61 @@ class MapReduce final {
     virtual ::grpc::ServerWriteReactor< ::mapreduce::TaskNotification>* SubscribeMapTask(
       ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Map<WithCallbackMethod_Reduce<WithCallbackMethod_SubscribeReduceTask<WithCallbackMethod_SubscribeMapTask<Service > > > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_MapDone() {
+      ::grpc::Service::MarkMethodCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::mapreduce::MapRequest, ::google::protobuf::Empty>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mapreduce::MapRequest* request, ::google::protobuf::Empty* response) { return this->MapDone(context, request, response); }));}
+    void SetMessageAllocatorFor_MapDone(
+        ::grpc::MessageAllocator< ::mapreduce::MapRequest, ::google::protobuf::Empty>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mapreduce::MapRequest, ::google::protobuf::Empty>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* MapDone(
+      ::grpc::CallbackServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::mapreduce::ReduceRequest, ::google::protobuf::Empty>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mapreduce::ReduceRequest* request, ::google::protobuf::Empty* response) { return this->ReduceDone(context, request, response); }));}
+    void SetMessageAllocatorFor_ReduceDone(
+        ::grpc::MessageAllocator< ::mapreduce::ReduceRequest, ::google::protobuf::Empty>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mapreduce::ReduceRequest, ::google::protobuf::Empty>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ReduceDone(
+      ::grpc::CallbackServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Map<WithCallbackMethod_Reduce<WithCallbackMethod_SubscribeReduceTask<WithCallbackMethod_SubscribeMapTask<WithCallbackMethod_MapDone<WithCallbackMethod_ReduceDone<Service > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Map : public BaseClass {
@@ -436,6 +584,40 @@ class MapReduce final {
     }
     // disable synchronous version of this method
     ::grpc::Status SubscribeMapTask(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::mapreduce::TaskNotification>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_MapDone() {
+      ::grpc::Service::MarkMethodGeneric(4);
+    }
+    ~WithGenericMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodGeneric(5);
+    }
+    ~WithGenericMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -518,6 +700,46 @@ class MapReduce final {
     }
     void RequestSubscribeMapTask(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncServerStreaming(3, context, request, writer, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_MapDone() {
+      ::grpc::Service::MarkMethodRaw(4);
+    }
+    ~WithRawMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestMapDone(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodRaw(5);
+    }
+    ~WithRawMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestReduceDone(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -609,6 +831,50 @@ class MapReduce final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_MapDone() {
+      ::grpc::Service::MarkMethodRawCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->MapDone(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* MapDone(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ReduceDone(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ReduceDone(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_Map : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
@@ -662,7 +928,61 @@ class MapReduce final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedReduce(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mapreduce::ReduceRequest,::mapreduce::ReduceResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Map<WithStreamedUnaryMethod_Reduce<Service > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_MapDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_MapDone() {
+      ::grpc::Service::MarkMethodStreamed(4,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mapreduce::MapRequest, ::google::protobuf::Empty>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mapreduce::MapRequest, ::google::protobuf::Empty>* streamer) {
+                       return this->StreamedMapDone(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_MapDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status MapDone(::grpc::ServerContext* /*context*/, const ::mapreduce::MapRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedMapDone(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mapreduce::MapRequest,::google::protobuf::Empty>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_ReduceDone : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ReduceDone() {
+      ::grpc::Service::MarkMethodStreamed(5,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mapreduce::ReduceRequest, ::google::protobuf::Empty>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mapreduce::ReduceRequest, ::google::protobuf::Empty>* streamer) {
+                       return this->StreamedReduceDone(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ReduceDone() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ReduceDone(::grpc::ServerContext* /*context*/, const ::mapreduce::ReduceRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedReduceDone(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::mapreduce::ReduceRequest,::google::protobuf::Empty>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Map<WithStreamedUnaryMethod_Reduce<WithStreamedUnaryMethod_MapDone<WithStreamedUnaryMethod_ReduceDone<Service > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_SubscribeReduceTask : public BaseClass {
    private:
@@ -718,7 +1038,7 @@ class MapReduce final {
     virtual ::grpc::Status StreamedSubscribeMapTask(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::google::protobuf::Empty,::mapreduce::TaskNotification>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_SubscribeReduceTask<WithSplitStreamingMethod_SubscribeMapTask<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Map<WithStreamedUnaryMethod_Reduce<WithSplitStreamingMethod_SubscribeReduceTask<WithSplitStreamingMethod_SubscribeMapTask<Service > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_Map<WithStreamedUnaryMethod_Reduce<WithSplitStreamingMethod_SubscribeReduceTask<WithSplitStreamingMethod_SubscribeMapTask<WithStreamedUnaryMethod_MapDone<WithStreamedUnaryMethod_ReduceDone<Service > > > > > > StreamedService;
 };
 
 }  // namespace mapreduce
