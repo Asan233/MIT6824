@@ -1,0 +1,72 @@
+// 使用protoc3 语法
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+// 定义proto命名空间
+package mapreduce;
+
+/*
+*       定义MapReduce服务
+*/
+
+service MapReduce {
+    // Map函数
+    rpc Map (MapRequest) returns (MapResponse);
+    // Reduce函数
+    rpc Reduce (ReduceRequest) returns (ReduceResponse);
+    // 建立长连接， Master推送Map任务更新
+    rpc SubscribeReduceTask(google.protobuf.Empty) returns (stream TaskNotification);
+    // 建立长连接， Master推送Reduce任务更新
+    rpc SubscribeMapTask(google.protobuf.Empty) returns (stream TaskNotification);
+}
+
+message TaskNotification {
+    enum TaskType {
+        NONE = 0;
+        MAP = 1;
+        REDUCE = 2;
+    }
+    TaskType task_type = 1;
+}
+
+// KV消息格式
+message KeyValue {
+    // key
+    string key = 1;
+    // value
+    int32 value = 2;
+}
+
+
+/**
+ *      定义MapRequest消息格式
+ */
+message MapRequest {
+    // Map线程号
+    int32 map_id = 1;
+}
+
+message MapResponse {
+    // Map文件是否已经完成
+    bool is_finished = 1;
+    // Map文件名
+    string filename = 2;
+}
+
+
+/**
+ *      定义ReduceRequest消息格式
+ */
+ message ReduceRequest {
+    // Reduce线程号
+    int32 reduce_id = 1;
+}
+
+message ReduceResponse {
+    // Reduce 文件是否已经完成
+    bool is_finished = 1;
+    // 输入文件名
+    string filename = 2;
+}
+

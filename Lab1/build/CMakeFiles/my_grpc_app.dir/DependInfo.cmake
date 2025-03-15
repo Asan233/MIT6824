@@ -1,0 +1,25 @@
+
+# Consider dependencies only in project.
+set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
+
+# The set of languages for which implicit dependencies are needed:
+set(CMAKE_DEPENDS_LANGUAGES
+  )
+
+# The set of dependency files which are needed:
+set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/asan/MITLab/Lab/Lab1/MapReduce.cc" "CMakeFiles/my_grpc_app.dir/MapReduce.cc.o" "gcc" "CMakeFiles/my_grpc_app.dir/MapReduce.cc.o.d"
+  "/home/asan/MITLab/Lab/Lab1/MapReduce.grpc.pb.cc" "CMakeFiles/my_grpc_app.dir/MapReduce.grpc.pb.cc.o" "gcc" "CMakeFiles/my_grpc_app.dir/MapReduce.grpc.pb.cc.o.d"
+  "/home/asan/MITLab/Lab/Lab1/MapReduce.pb.cc" "CMakeFiles/my_grpc_app.dir/MapReduce.pb.cc.o" "gcc" "CMakeFiles/my_grpc_app.dir/MapReduce.pb.cc.o.d"
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_LINKED_INFO_FILES
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_FORWARD_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")

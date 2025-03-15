@@ -1,0 +1,4 @@
+/home/asan/MITLab/Lab/Lab1/build/CMakeFiles/Master.dir
+/home/asan/MITLab/Lab/Lab1/build/CMakeFiles/Work.dir
+/home/asan/MITLab/Lab/Lab1/build/CMakeFiles/edit_cache.dir
+/home/asan/MITLab/Lab/Lab1/build/CMakeFiles/rebuild_cache.dir
