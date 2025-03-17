@@ -6,6 +6,8 @@
 #include <condition_variable>
 #include <atomic>
 #include <fcntl.h>
+#include <fstream>
+#include <dirent.h>
 
 #include "MapReduce.grpc.pb.h"
 
@@ -18,13 +20,13 @@ public:
     KVPair(std::string& key, int value): Key(std::move(key)), value(value) {}
     std::string Key;
     int value;
-    
 };
 
 class WorkMapReduce {
 
 public:
-    WorkMapReduce(std::shared_ptr<grpc::Channel> channel, int mapN = 13, int reduceN = 9): MapNumber(mapN), ReduceNumber(reduceN), _stub(mapreduce::MapReduce::NewStub(channel)), nonblock(false) {
+    WorkMapReduce(std::shared_ptr<grpc::Channel> channel, int mapN = 13, int reduceN = 9): MapNumber(mapN), ReduceNumber(reduceN), _stub(mapreduce::MapReduce::NewStub(channel)),
+                    nonblock_map(false), nonblock_reduce(false) {
         // Map线程创建
         for(int i = 0; i < MapNumber; ++i) {
             MapThreads.emplace_back(&WorkMapReduce::MapF, this, i);
@@ -49,7 +51,8 @@ private:
     std::vector<std::thread> ReduceThreads; // Reduce线程
     std::unique_ptr<mapreduce::MapReduce::Stub> _stub;  // Master服务器stub
 
-    bool nonblock;          // 是否唤醒所有线程
+    bool nonblock_map;          // 是否唤醒map所有线程
+    bool nonblock_reduce;       // 是否唤醒reduce所有线程
 
     // 唤醒Map获取Map任务
     // std::mutex mapMutex;
@@ -72,8 +75,8 @@ private:
         while(1) {
             // 等待Client唤醒
             std::unique_lock<std::mutex> lock(tmpMutex);
-            mapCV.wait(lock, [this]() {return 0 != MapTaskNumer.load(std::memory_order_acquire) || nonblock; });
-            if(nonblock) {
+            mapCV.wait(lock, [this]() {return 0 != MapTaskNumer.load(std::memory_order_acquire) || nonblock_map; });
+            if(nonblock_map) {
                 break;
             }
             MapTaskNumer.fetch_sub(1, std::memory_order_release);
@@ -93,7 +96,7 @@ private:
                         int hash = Hash_str(content[i]);
                         reducefiles[hash].emplace_back(content[i], 1);
                     }
-                    writeDisk(reducefiles, ID);
+                    writeMapDisk(reducefiles, ID);
                     grpc::ClientContext context;
                     google::protobuf::Empty empty;
                     _stub->MapDone(&context, request, &empty);
@@ -112,9 +115,11 @@ private:
         while(1) {
             // 等待Client唤醒
             std::unique_lock<std::mutex> lock(tmpMutex);
-            reduceCV.wait( lock, [this]() { return 0 != ReduceTaskNumer.load(std::memory_order_acquire); } );
+            reduceCV.wait( lock, [this]() { return 0 != ReduceTaskNumer.load(std::memory_order_acquire) || nonblock_reduce; } );
+            if(nonblock_reduce) {
+                break;
+            }
             ReduceTaskNumer.fetch_sub(1, std::memory_order_release);
-            //std::cout << "Reduce ID : " << ID << std::endl;
             /* 每次RPC调用都需要使用一个新的上下文，不能将一个ClientContext来发起多次RPC调用 */
             grpc::ClientContext context;
             grpc::Status status = _stub->Reduce(&context, request, &response);
@@ -123,9 +128,21 @@ private:
                     std::cout << "Reduce Finished : " << ID << std::endl;
                     break;
                 }else {
-                    std::cout << "Reduce ID : " << ID << " Task : " << response.filename() << std::endl;
+                    int reduceID = response.filename()[0] - '0';
+                    std::cout << "Reduce ID : " << ID << " Task : " << reduceID << std::endl;
                     // Reduce任务处理
-                    sleep(10);
+                    std::multimap<std::string, int> res = std::move(shuffle(response.filename()));
+                    std::map<std::string, int> result;
+                    for(auto& kv : res) {
+                        result[kv.first] += kv.second;
+                    }
+                    if( writeReduceDisk(result, response.filename()) ) {
+                        grpc::ClientContext context;
+                        google::protobuf::Empty empty;
+                        _stub->ReduceDone(&context, request, &empty);
+                    }else {
+                        std::cout << "Reduce Task " << response.filename() << " Error !" << std::endl;
+                    }
                 }
             }else continue;
         }
@@ -140,7 +157,7 @@ private:
 
         while( reader->Read(&notification) ) {
             if(notification.task_type() == mapreduce::TaskNotification::NONE) {
-                nonblock = true;
+                nonblock_map = true;
                 mapCV.notify_all();
                 for(int i = 0; i < MapNumber; ++i) {
                     MapThreads[i].join();
@@ -161,17 +178,56 @@ private:
         google::protobuf::Empty empty;              // 空请求体
         /* 建立长连接，等待任务通知 */
         std::unique_ptr<grpc::ClientReader<mapreduce::TaskNotification>> reader(_stub->SubscribeReduceTask(&context, empty));
-
+        
         while( reader->Read(&notification) ) {
             if(notification.task_type() == mapreduce::TaskNotification::NONE) {
-                std::cout << "No Task " << std::endl;
+                nonblock_reduce = true;
+                reduceCV.notify_all();
+                for(int i = 0; i < ReduceNumber; ++i) {
+                    ReduceThreads[i].join();
+                }
+                std::cout << "Reduce Client Task Finish !" << std::endl;
                 break;
-            }else if(notification.task_type() == mapreduce::TaskNotification::REDUCE) {
+            }else if( notification.task_type() == mapreduce::TaskNotification::REDUCE ) {
                 std::cout << "Reduce Task " << std::endl;
                 ReduceTaskNumer.fetch_add(1, std::memory_order_release);
                 reduceCV.notify_one();
             }
         }
+    }
+
+    std::multimap<std::string, int> shuffle(std::string reduceID) {
+
+        std::string path = "../tmpFiles/";
+        std::vector<std::string> files;
+        /* 遍历Path文件里面的所有文件，得到Map Tmp文件 */
+        DIR* dir = opendir(path.c_str());
+        if(!dir) {
+            std::cerr << "无法打开目录： " << path << std::endl;
+        }
+        struct dirent* entry;
+        std::string fileN = "tmp_Reduce_" + reduceID;
+        while( (entry = readdir(dir)) != nullptr ) {
+            if(strncmp(entry->d_name, fileN.c_str(), fileN.size() )) {
+                files.push_back(path + entry->d_name);
+            }
+        }
+        closedir(dir);
+
+        std::multimap<std::string, int> res;
+        for(int i = 0; i < files.size(); ++i) {
+            std::string filename = files[i];
+            std::ifstream file (filename.c_str());
+            if(!file.is_open()) {
+                std::cout << "Open File : " << filename << " Error " << std::endl;
+                return std::multimap<std::string, int>();
+            }
+            KVPair kv;
+            while(file >> kv.Key >> kv.value) {
+                res.insert(std::make_pair(kv.Key, kv.value));
+            }
+        }
+        return res;
     }
 
     std::vector<std::string> SplitStr(const char* str) {
@@ -201,7 +257,7 @@ private:
         return res;
     }
 
-    void writeDisk(std::vector<std::vector<KVPair>>& reducefiles, int ID) {
+    void writeMapDisk(std::vector<std::vector<KVPair>>& reducefiles, int ID) {
         int i = 0;
         for(auto& vec : reducefiles) {
             std::string filename = "../tmpFiles/tmp_Reduce_" + std::to_string(i) + "_Map_" +  std::to_string(ID) + ".txt";
@@ -221,13 +277,28 @@ private:
         }
     }
 
-    int Hash_str(std::string& str) {
-    int hash = 0;
-    for(int i = 0; i < str.size(); ++i) {
-        hash = (hash + str[i]) % ReduceNumber;
+    bool writeReduceDisk(std::map<std::string, int>& res, std::string ID) {
+        std::string filename = "../OutputFiles/Reduce_" + ID + ".txt";
+        int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+        if(fd == -1) {
+            std::cout << "Open File : " << filename << " Error " << std::endl;
+            return false;    
+        }
+        for(auto& kv : res) {
+            std::string tmp = kv.first + " " + std::to_string(kv.second) + "\n";
+            write(fd, tmp.c_str(), tmp.size());
+        }
+        close(fd);
+        return true;
     }
-    return hash;
-}
+
+    int Hash_str(std::string& str) {
+        int hash = 0;
+        for(int i = 0; i < str.size(); ++i) {
+            hash = (hash + str[i]) % ReduceNumber;
+        }
+        return hash;
+    }
 };
 
 
