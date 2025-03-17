@@ -95,12 +95,14 @@ class Time_Wheel {
         }
 
         /* 删除定时器 */
-        void del_time(int worker_id) {
+        bool del_time(int worker_id) {
             time_tw* timer = worker_timer[worker_id];
+            if(timer == nullptr) return false;
             timer->prev->next = timer->next;
             timer->next->prev = timer->prev;
             worker_timer[worker_id] = nullptr;
             delete timer;
+            return true;
         }
 
         /* 触发超时心跳 */
@@ -167,11 +169,11 @@ class MapReduceServiceImpl final : public MapReduce::Service {
         // Map需要完成任务减一
         MapFinish.fetch_sub(1, std::memory_order_release);
         // Reduce需要完成的任务加一
+        std::unique_lock<std::mutex> lock(reduceMutex);
+        ReducesTasks.push(std::to_string(ReduceFinish.load(std::memory_order_acquire)));
+        lock.unlock();
         ReduceFinish.fetch_add(1, std::memory_order_release);
         ReduceTaskNumer.fetch_add(1, std::memory_order_release);
-        std::unique_lock<std::mutex> lock(reduceMutex);
-        ReducesTasks.push(workers[work_id]);
-        lock.unlock();
         MapCV.notify_one();
         return grpc::Status::OK;
     }
@@ -194,9 +196,15 @@ class MapReduceServiceImpl final : public MapReduce::Service {
 
     grpc::Status ReduceDone(grpc::ServerContext* context, const mapreduce::ReduceRequest* request, google::protobuf::Empty* response) override{
         int work_id = request->reduce_id();
-        Time_Wheel::GetInstance()->del_time(work_id);
+        bool ret = Time_Wheel::GetInstance()->del_time(work_id);
+        if(!ret) {
+            std::cout << "Reduce Done TimeOver : " << work_id << std::endl;
+            return grpc::Status::OK;
+        }
+        std::cout << "Reduce Done : " << work_id << "  Task : " << results[work_id] << std::endl;
         // Reduce需要完成任务减一
         ReduceFinish.fetch_sub(1, std::memory_order_release);
+        reduceCV.notify_one();
         return grpc::Status::OK;
     }
 

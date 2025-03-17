@@ -25,7 +25,7 @@ public:
 class WorkMapReduce {
 
 public:
-    WorkMapReduce(std::shared_ptr<grpc::Channel> channel, int mapN = 13, int reduceN = 9): MapNumber(mapN), ReduceNumber(reduceN), _stub(mapreduce::MapReduce::NewStub(channel)),
+    WorkMapReduce(std::shared_ptr<grpc::Channel> channel, int mapN = 13, int reduceN = 8): MapNumber(mapN), ReduceNumber(reduceN), _stub(mapreduce::MapReduce::NewStub(channel)),
                     nonblock_map(false), nonblock_reduce(false) {
         // Map线程创建
         for(int i = 0; i < MapNumber; ++i) {
